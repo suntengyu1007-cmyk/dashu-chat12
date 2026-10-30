@@ -1,7 +1,7 @@
 const ui = { meta: null, cases: [], report: null, notebook: [], metrics: null };
 const titles = { submit: '采购填报', auto: '主单明细', review: '人工审核', ops: '营运确认', biz: '商分确认', report: '追损月报', notebook: '市调错误错题本', flow: '阶段对比', iteration: '迭代看板' };
 const browserDemo = {
-  meta: { ok: true, app: { version: 'MVP 0.8 明细审核', mode: 'DEMO' }, states: {}, dictionaries: { errorReasons: { PRICE_ENTRY_ERROR: { label: '价格录入错误' } } } },
+  meta: { ok: true, app: { version: 'MVP 0.9 分岗月报', mode: 'DEMO' }, states: {}, dictionaries: { errorReasons: { PRICE_ENTRY_ERROR: { label: '价格录入错误' } } } },
   cases: [
     { id: 'LR-DEMO-001', orderNumber: 'LOSS-DEMO-001', state: 'HUMAN_REVIEW', lossReason: '活动跟价价格录入错误，需核对活动期间成交金额与图片证据。', facts: demoFacts('LOSS-DEMO-001') },
     { id: 'LR-DEMO-002', orderNumber: 'LOSS-DEMO-002', state: 'OPS_CONFIRMATION', lossReason: '市调图片与美菜商品规格不一致。', facts: demoFacts('LOSS-DEMO-002') },
@@ -187,7 +187,7 @@ document.addEventListener('click', (event) => {
   if (button.dataset.action === 'biz-approve') transition(id, { nextState: 'PENDING_EXECUTION', actorRole: 'business_finance', actor: '演示商分确认人', responsibilityType: 'SURVEYOR_ERROR', responsiblePersonId: 'survey-demo-new', responsiblePersonName: '演示市调员A', errorChannel: 'MARKET_PRICE_COLLECTION', errorReason: 'PRICE_ENTRY_ERROR', originalJudgement: '无需追损', correctJudgement: '可追损', confirmationNote: '确认' }, '已进入月报 / 错题本判断');
 });
 
-function renderAll() { renderAuto(); renderReview(); renderOps(); renderBiz(); renderReport(); renderNotebook(); renderFlow(); renderIteration(); }
+function renderAll() { renderAuto(); renderReview(); renderOps(); renderBiz(); renderReport(); renderNotebook(); renderIteration(); }
 async function loadAll() {
   const [meta, cases, report, notebook, metrics] = await Promise.all([api('/api/meta'), api('/api/cases'), api('/api/reports/monthly?month=2026-09'), api('/api/notebook?month=2026-09'), api('/api/metrics/iteration')]);
   ui.meta = meta; ui.cases = cases.cases; ui.report = report.report; ui.notebook = notebook.entries; ui.metrics = metrics.metrics;
@@ -208,22 +208,22 @@ function caseDetails(record, role = '主单明细', action = '') {
   <tr><th>市调渠道 / 人员</th><td>${escapeHtml(f.surveyChannel)} / 演示市调员 A</td><th>活动跟价金额</th><td>¥${Number(f.followPriceAmount).toFixed(2)}</td></tr>
   <tr><th>采购追损原因</th><td colspan="3">${escapeHtml(record.lossReason)}</td></tr>
   <tr><th>系统核查意见</th><td colspan="3">待人工核实商品、规格、时间及价格证据；跟价金额不直接等于最终追损金额。</td></tr></tbody></table></div>
-  <div class="comparison-scroll"><table class="detail-grid evidence-review"><thead><tr><th>证据</th><th>市调</th><th>美菜</th></tr></thead><tbody><tr><th>图片</th><td>${evidenceVisual('survey')}</td><td>${evidenceVisual('meicai')}</td></tr><tr><th>图片标价</th><td>¥19.90 / 500g</td><td>¥21.80 / 500g</td></tr><tr><th>核查结果</th><td colspan="2">商品及规格一致；图示价格差 ¥1.90 / 500g。需对照原始录入记录确认录入错误，不能仅凭两个渠道存在价差判责。</td></tr></tbody></table></div>
+  ${stageHistory(record)}<div class="comparison-scroll"><table class="detail-grid evidence-review"><thead><tr><th>证据</th><th>市调</th><th>美菜</th></tr></thead><tbody><tr><th>图片</th><td>${evidenceVisual('survey')}</td><td>${evidenceVisual('meicai')}</td></tr><tr><th>图片标价</th><td>¥19.90 / 500g</td><td>¥21.80 / 500g</td></tr><tr><th>核查结果</th><td colspan="2">商品及规格一致；图示价格差 ¥1.90 / 500g。需对照原始录入记录确认录入错误，不能仅凭两个渠道存在价差判责。</td></tr></tbody></table></div>
   <div class="review-checks"><b>${role}核查重点</b><p>${role === '营运确认' ? '确认实际业务损失、影响数量、活动时间和责任对象；存在争议时反馈具体字段与补充证据。' : '核对同一主单与 SKU、原始录入价格、图片标价、规格单位、时间及实际损失依据，形成可回查的判断。'}</p></div>
   ${action ? `<div class="simple-actions"><button class="primary-button" data-action="${action}-approve" data-id="${record.id}">确认</button><button class="secondary-button" data-action="feedback" data-id="${record.id}" data-role="${action}">我要反馈</button></div><form class="feedback-form" data-feedback-id="${record.id}" hidden><label>反馈字段与原因<textarea name="feedback" placeholder="例如：SKU 不一致，请补充原始录入记录" required></textarea></label><button class="primary-button" type="submit" data-id="${record.id}" data-role="${action}">提交反馈</button><span>提交后保留原始证据及反馈记录，等待补充。</span></form>` : ''}${record.feedback ? `<p class="feedback-log">反馈记录：${escapeHtml(record.feedback)}</p>` : ''}</article>`;
 }
 function renderAuto() { document.querySelector('#auto-content').innerHTML = caseDetails(ui.cases[0]); }
 function renderReview() {
-  const sections = document.body.dataset.experience === 'mobile' ? [['HUMAN_REVIEW','人工审核','review'],['OPS_CONFIRMATION','营运确认','ops']] : [['HUMAN_REVIEW','人工审核','review']];
+  const sections = [['HUMAN_REVIEW','人工审核','review']];
   document.querySelector('#review-content').innerHTML = sections.map(([state,label,action]) => ui.cases.filter(x=>x.state===state).map(x=>caseDetails(x,label,action)).join('')).join('') || '<div class="empty">当前没有待处理明细</div>';
-  if(document.body.dataset.experience === 'mobile') document.querySelector('#review-content').innerHTML += `<h3>商分待确认</h3>${bizTable()}`;
+  document.querySelector('#review-content').insertAdjacentHTML('afterbegin', roleHeader('review'));
 }
-function renderOps() { document.querySelector('#ops-content').innerHTML = ui.cases.filter(x=>x.state==='OPS_CONFIRMATION').map(x=>caseDetails(x,'营运确认','ops')).join('') || '<div class="empty">当前没有待确认明细</div>'; }
+function renderOps() { document.querySelector('#ops-content').innerHTML = roleHeader('ops') + (ui.cases.filter(x=>x.state==='OPS_CONFIRMATION').map(x=>caseDetails(x,'营运确认','ops')).join('') || '<div class="empty">当前没有待确认明细</div>'); }
 function bizTable() {
   const rows=ui.cases.filter(x=>x.state==='BIZ_CONFIRMATION');
   return `<div class="plain-panel comparison-scroll"><table class="detail-grid"><thead><tr><th>主单 / 活动</th><th>商品 / 时间</th><th>渠道 / 原因</th><th>跟价金额</th><th>审核意见</th><th>营运意见</th><th>责任 / 规则</th><th>操作</th></tr></thead><tbody>${rows.map(x=>`<tr><td>${escapeHtml(x.orderNumber)}<small>${escapeHtml(x.facts.activityId)}</small></td><td>鲜猪肉 500g<small>${escapeHtml(x.facts.createdAt)} 至 ${escapeHtml(x.facts.endedAt)}</small></td><td>${escapeHtml(x.facts.surveyChannel)}<small>${escapeHtml(x.lossReason)}</small></td><td>¥${Number(x.facts.followPriceAmount).toFixed(2)}<small>最终追损金额待核定</small></td><td>演示：证据已核对</td><td>演示：业务事实已确认</td><td>责任待最终确认<small>适用现行规则原文，未配置扣罚公式</small></td><td><button class="primary-button" data-action="biz-approve" data-id="${x.id}">确认</button><button class="secondary-button" data-action="feedback" data-id="${x.id}" data-role="biz">我要反馈</button></td></tr><tr><td colspan="8"><form class="feedback-form" data-feedback-id="${x.id}" hidden><textarea name="feedback" placeholder="填写商分反馈" required></textarea><button type="submit" data-id="${x.id}" data-role="biz">提交反馈</button></form></td></tr>`).join('') || '<tr><td colspan="8">暂无待确认明细</td></tr>'}</tbody></table></div>`;
 }
-function renderBiz(){document.querySelector('#biz-content').innerHTML=bizTable();}
+function renderBiz(){document.querySelector('#biz-content').innerHTML=roleHeader('biz')+bizTable();}
 const mistakeSamples = [
  ['LOSS-DEMO-101','10-08','演示市调员 A','线下门店','鲜猪肉 500g','价格录入错误','图片 ¥19.90，录入 ¥17.90','市调采价真实性与价格录入核对','待判责 / 未执行处罚','先放大价签，再核对单位后录入'],
  ['LOSS-DEMO-102','10-15','演示市调员 A','竞对小程序','牛奶 250ml×12','规格不一致','误将 250ml×10 对比 250ml×12','同品同规比价核验','已确认需整改 / 扣罚待核定','品牌、规格、件数逐项勾选'],
@@ -252,6 +252,23 @@ document.addEventListener('click',event=>{
  const tab=event.target.closest('[data-notebook]'); if(tab){document.querySelector('#personal-notes').hidden=tab.dataset.notebook!=='personal';document.querySelector('#public-notes').hidden=tab.dataset.notebook!=='public';}
 });
 document.addEventListener('submit',event=>{if(!event.target.matches('.feedback-form'))return;event.preventDefault();const button=event.target.querySelector('button');const record=browserDemo.cases.find(x=>x.id===button.dataset.id);if(record){record.feedback=new FormData(event.target).get('feedback');record.state={review:'HUMAN_RETURNED',ops:'OPS_RETURNED',biz:'BIZ_RETURNED'}[button.dataset.role];document.querySelectorAll(`[data-id="${record.id}"][data-action$="-approve"]`).forEach(b=>{b.disabled=true;b.textContent='待补充';});event.target.innerHTML=`<p class="feedback-log">已提交反馈：${escapeHtml(record.feedback)}。当前状态：待补充，未进入下一节点。</p>`;showToast('反馈已记录，等待补充');}});
+const roleOwners = {review:{label:'人工审核',person:'审核员 A（演示）',order:1,scope:'核对主单、原始录入及双图证据，形成审核意见。'},ops:{label:'营运确认',person:'营运专员 B（演示）',order:2,scope:'接收审核通过的案件，确认实际业务事实、损失口径及责任对象。'},biz:{label:'商分确认',person:'商分专员 C（演示）',order:3,scope:'接收营运确认的案件，核对金额、规则及前序意见，确认结案口径。'}};
+function roleHeader(role){const r=roleOwners[role];return `<div class="plain-panel role-header"><b>第 ${r.order} 步 · ${r.label}</b><p>本节点办理人：<strong>${r.person}</strong></p><p>${r.scope}</p><small>人工审核 A → 营运 B → 商分 C；三个独立工作台，按顺序进入各自待办。人员名称为 Demo 占位。</small></div>`;}
+function stageHistory(record){const active={HUMAN_REVIEW:1,OPS_CONFIRMATION:2,BIZ_CONFIRMATION:3,PENDING_EXECUTION:4}[record.state]||1;return `<div class="comparison-scroll"><table class="detail-grid"><thead><tr><th>顺序</th><th>办理节点</th><th>对应人员</th><th>处理状态</th><th>意见</th></tr></thead><tbody>${Object.values(roleOwners).map(r=>`<tr><td>${r.order}</td><td>${r.label}</td><td>${r.person}</td><td>${r.order<active?'已确认（演示）':r.order===active?'待处理':'待前序完成'}</td><td>${r.order<active?'本节点已完成核对（演示）':'—'}</td></tr>`).join('')}</tbody></table></div>`;}
+function renderReport(){
+ const rows=[
+ ['LOSS-DEMO-201','ACT-DEMO-10201','10-08','广州','猪肉','鲜猪肉 500g','线下门店','价格录入错误','价签19.90，录入17.90','286.40','120.00','审核员 A / 10-09','营运专员 B / 10-10','商分专员 C / 10-11','已确认 / 待执行','价格录入核对','拍照后逐位核价'],
+ ['LOSS-DEMO-202','ACT-DEMO-10202','10-15','广州','乳品','牛奶250ml×12','竞对小程序','规格不一致','10盒与12盒直接比价','180.00','80.00','审核员 A / 10-16','营运专员 B / 10-17','商分专员 C / 10-18','已确认 / 待执行','同品同规核验','品牌、净含量及件数核对'],
+ ['LOSS-DEMO-203','ACT-DEMO-10203','10-23','深圳','调味品','调味品1L','线下门店','图片已过期','引用已结束活动图片','96.00','0.00','审核员 A / 10-24','营运专员 B / 10-25','商分专员 C / 10-26','已确认 / 不追损','图片时效核验','核实活动期及适用门店']
+ ];
+ document.querySelector('#report-content').innerHTML=`<article class="plain-panel"><h3>2026 年 10 月追损月报</h3><p>演示数据 · 已确认 3 单，核定可追损 2 单、不追损 1 单。跟价金额 ¥562.40，核定追损 ¥200.00，实际执行 ¥0.00；统计口径与下表逐单闭合。</p><h4>一、逐单明细</h4><p>三个办理节点分别显示人员、时间和处理顺序，向右滑动可查看全部字段。</p><div class="comparison-scroll"><table class="detail-grid"><thead><tr>${['主单ID','活动ID','发起日期','城市','品类','商品','错误渠道','错误原因','具体事实','跟价金额','核定追损金额','①人工审核 / 人员及时间','②营运确认 / 人员及时间','③商分确认 / 人员及时间','最终状态','适用核查规则','市调加强点'].map(v=>`<th>${v}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map(v=>`<td>${escapeHtml(v)}</td>`).join('')}</tr>`).join('')}</tbody></table></div><h4>二、渠道与原因分析</h4><table class="detail-grid"><thead><tr><th>维度</th><th>分布</th><th>问题机制</th></tr></thead><tbody><tr><td>错误渠道</td><td>线下门店 2 单；竞对小程序 1 单</td><td>门店证据缺少有效期核对；线上商品容易遗漏包装件数。</td></tr><tr><td>错误原因</td><td>价格录入、规格不一致、时效错误各 1 单</td><td>录入、同规和有效期三个校验环节均需明确检查动作。</td></tr></tbody></table><h4>三、优化建议与跟进</h4><table class="detail-grid"><thead><tr><th>问题 / 关联单</th><th>优化动作</th><th>建议负责岗位</th><th>验收方式</th></tr></thead><tbody><tr><td>录入错误 / 201</td><td>图片标价与录入价并排展示，差异触发二次核对</td><td>产品配置；市调执行</td><td>回查新增样本的图价一致率及同类再犯情况</td></tr><tr><td>规格不一致 / 202</td><td>提交前核对品牌、净含量、单位与包装件数</td><td>市调负责人；审核人员</td><td>抽查同规校验记录，追踪规格原因退回情况</td></tr><tr><td>图片过期 / 203</td><td>收集拍摄时间、价格有效期、门店和促销限制</td><td>市调负责人；营运</td><td>核对证据是否覆盖对应活动期间</td></tr></tbody></table><h4>四、市调注意事项</h4><ol><li>同一主单与 SKU 对应同一商品，核对品牌、规格、单位和包装件数。</li><li>价签完整清晰，核对普通价、会员价、促销门槛及限购条件。</li><li>拍摄时间和价格有效期覆盖本次市调，核对门店、城市及渠道。</li><li>录入后再次对照原图，不用不同渠道的价差直接认定人员错误。</li><li>证据不足时补充原始记录；处罚以有效规则、确认结果及执行凭证回查。</li></ol><h4>五、错题本联动</h4><p>最终认定为市调人员错误的案件进入个人本月错题；匿名同类问题汇入公共错题本。后续改判同步更新月报、个人及公共案例。</p></article>`;
+}
+// Comparative design belongs in the Feishu document, not the application.
+document.querySelectorAll('[data-view="flow"], [data-view-panel="flow"]').forEach(el=>el.remove());
+delete titles.flow;
+if(document.body.dataset.experience==='mobile'){
+ document.querySelector('.mobile-nav').innerHTML=[['submit','＋','发起'],['auto','▤','明细'],['review','1','人审'],['ops','2','营运'],['biz','3','商分'],['report','⌁','月报'],['notebook','◇','错题本']].map(([view,icon,label])=>`<button class="nav-item" data-view="${view}"><i>${icon}</i><span>${label}</span></button>`).join('');
+}
 document.querySelectorAll('.nav-item').forEach((button) => button.addEventListener('click', () => switchView(button.dataset.view)));
 document.querySelector('#submission-form').addEventListener('submit', submitCase);
 loadAll().then(() => { const requested = new URL(location.href).searchParams.get('view'); if (titles[requested]) switchView(requested); }).catch((error) => showToast(`加载失败：${error.message}`, true));
