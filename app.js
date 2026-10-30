@@ -270,6 +270,28 @@ if(document.body.dataset.experience==='mobile'){
  document.querySelector('.mobile-nav').innerHTML=[['submit','＋','发起'],['auto','▤','明细'],['review','1','人审'],['ops','2','营运'],['biz','3','商分'],['report','⌁','月报'],['notebook','◇','错题本']].map(([view,icon,label])=>`<button class="nav-item" data-view="${view}"><i>${icon}</i><span>${label}</span></button>`).join('');
 }
 document.querySelectorAll('.nav-item').forEach((button) => button.addEventListener('click', () => switchView(button.dataset.view)));
+const collectedMistakes = [
+ {id:'REF-01',category:'蔬菜',type:'品种不一致',origin:'截图案例',left:'美菜蔬菜商品（截图为紫色叶菜）',right:'竞对蔬菜商品（截图为不同名称）',fact:'原错题卡标注“品牌不对标”；两侧商品名称不同，不能只凭颜色和外观配对。',answer:'先核对具体品种、商品名称及规格；确认同品后再比价。',points:'品种、产地/等级、净重、单位',source:'用户提供的错题本截图，右下案例；商品小字及原单ID待清晰原图回查',status:'来源可见；原单及处罚待回查'},
+ {id:'REF-02',category:'乳品饮料',type:'口味不一致',origin:'截图案例',left:'饮料商品 A（成组粉色瓶装）',right:'另一款乳饮料商品',fact:'原错题卡明确标注“口味不对标”，两侧商品描述存在口味差异。',answer:'核对品牌、产品系列和口味，再核对每瓶容量与每组数量。',points:'口味、系列、容量、包装数量',source:'用户提供的错题本截图，左下案例；完整品名及原单ID待回查',status:'来源可见；处罚结果未提供'},
+ {id:'REF-03',category:'冷冻食品',type:'商品主体不一致',origin:'截图案例',left:'美菜冷冻商品 A',right:'竞对冷冻商品 B',fact:'原错题卡标注“商品主体不对标”；相近外包装或相同克重不能证明商品相同。',answer:'先核对商品主体、品牌与馅料/配方，规格相同仍须核对品名。',points:'商品主体、品牌、馅料、净含量',source:'用户提供的错题本截图，右上案例；完整品名及原单ID待回查',status:'来源可见；处罚结果未提供'},
+ {id:'REF-04',category:'加工调理',type:'品牌不一致',origin:'截图案例',left:'美菜加工食品 A',right:'另一品牌加工食品',fact:'原错题卡明确标注“品牌不对标”，两侧展示了不同品牌包装。',answer:'逐字核对包装品牌及商品全名，不用“都是同类食品”代替同品确认。',points:'品牌、商品全名、口味、重量',source:'用户提供的错题本截图，左上案例；细分类及原单ID待回查',status:'来源可见；处罚结果未提供'},
+ ...[
+ ['水果','品种与等级','核对是否为同一水果品种','只看外观颜色是否足够？','不足。核对品种、大小/等级、产地及销售单位。','品种、等级、产地、斤/件'],
+ ['猪肉','部位与加工状态','核对肉品具体部位','鲜肉与冷冻肉、带皮与去皮可直接比价吗？','需先核对部位、鲜冻状态、带皮/去骨等加工状态。','部位、鲜冻、带皮、去骨'],
+ ['牛羊肉','原切与调理','核对原料和加工方式','同名牛肉卷能否默认同品？','先核对原切/调理、配料及规格，名称相近不等于同品。','部位、原切/调理、配料、规格'],
+ ['禽肉','部位与鲜冻','核对禽肉部位及包装','不同部位或不同鲜冻状态能直接配对吗？','先核对部位、鲜冻状态和包装重量，再判断可比性。','整只/分割、鲜冻、重量、单位'],
+ ['蛋品','枚重与计价单位','核对箱内数量及每枚规格','每箱价格能直接与每斤价格对比吗？','先核实枚数、枚重及实际净重，统一单位后复核。','枚数、枚重、净重、箱/斤'],
+ ['冷冻水产','净重与处理方式','核对净含量及处理方式','毛重、含冰重能否代替净重？','不能混用。核对净重、含冰情况、规格与去头/去壳状态。','净重、含冰、规格、处理方式'],
+ ['米面粮油','包装规格','核对净含量与包装数量','单袋与整件价格能直接比较吗？','核对品牌、品种、净含量与件装数后统一口径。','品牌、品种、kg/L、袋/件'],
+ ['调味品','系列与促销条件','核对产品系列及有效价格','会员价、满减价能否作为无条件售价？','先核实适用条件和有效期，再按当前业务规则取价。','系列、容量、会员/满减条件、有效期'],
+ ['干货','品种与干湿状态','核对具体品种与加工状态','干制和泡发商品名称相近，是否可直接比价？','先确认干湿状态、等级及净重，避免把泡发重量当干品重量。','品种、干湿、等级、净重']
+ ].map(([category,type,left,right,answer,points],i)=>({id:`CHECK-${i+1}`,category,type,origin:'检查训练卡',left,right,fact:'依据同品、同规、同单位及证据时效核查方法整理的练习题，未对应真实错单。',answer,points,source:'核查方法归纳；真实案例与类目专用规则待补',status:'训练卡；无真实处罚记录'}))
+];
+const previousNotebookRender=renderNotebook;
+renderNotebook=function(){previousNotebookRender();document.querySelector('#public-notes').innerHTML=`<h3>公共错题本 · 跨类目案例卡</h3><p>已整理 ${collectedMistakes.length} 张卡：4 张来自用户截图，${collectedMistakes.length-4} 张为检查训练卡。截图案例仅复现可辨认事实，原单ID、处理日期及处罚结果待回查；训练卡不计入任何人的错题数量。</p><div class="case-filters"><label>类目<select id="mistake-category"><option value="全部">全部类目</option>${collectedMistakes.map(x=>`<option>${x.category}</option>`).join('')}</select></label><label>来源<select id="mistake-origin"><option>全部来源</option><option>截图案例</option><option>检查训练卡</option></select></label><span id="mistake-count"></span></div><div id="mistake-library" class="mistake-library"></div>`;renderMistakeLibrary();};
+function renderMistakeLibrary(){const category=document.querySelector('#mistake-category')?.value||'全部';const origin=document.querySelector('#mistake-origin')?.value||'全部来源';const rows=collectedMistakes.filter(x=>(category==='全部'||x.category===category)&&(origin==='全部来源'||x.origin===origin));document.querySelector('#mistake-count').textContent=`当前 ${rows.length} 张`;document.querySelector('#mistake-library').innerHTML=rows.map(x=>`<article class="mistake-card"><header><span>${escapeHtml(x.category)} · ${escapeHtml(x.type)}</span><small>${x.origin}</small></header><div class="mistake-pair"><div><small>原对象 / 核对项</small><b>${escapeHtml(x.left)}</b></div><div><small>对比对象 / 判断题</small><b>${escapeHtml(x.right)}</b></div></div><p class="mistake-fact"><b>错误点 / 问题：</b>${escapeHtml(x.fact)}</p><details><summary>查看解析与加强点</summary><p><b>正确做法：</b>${escapeHtml(x.answer)}</p><p><b>提醒加强：</b>${escapeHtml(x.points)}</p><p><b>规则 / 处罚：</b>${escapeHtml(x.status)}。不依据截图自行追加处罚。</p><p class="muted">来源：${escapeHtml(x.source)}</p></details><footer><small>${x.id} · ${x.origin==='截图案例'?'来源案例收集':'待补真实案例'}</small><button class="secondary-button" data-study="${x.id}">标记已学习</button></footer></article>`).join('');}
+document.addEventListener('change',event=>{if(['mistake-category','mistake-origin'].includes(event.target.id))renderMistakeLibrary();});
+document.addEventListener('click',event=>{const b=event.target.closest('[data-study]');if(b){b.textContent='已学习 ✓';b.disabled=true;}});
 document.querySelector('#submission-form').addEventListener('submit', submitCase);
 loadAll().then(() => { const requested = new URL(location.href).searchParams.get('view'); if (titles[requested]) switchView(requested); }).catch((error) => showToast(`加载失败：${error.message}`, true));
 
