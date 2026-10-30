@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="追损协同电脑版工作台"><title>追损协同｜电脑版工作台</title><link rel="stylesheet" href="styles.css"></head>
+<body class="workspace-page desktop-mode" data-experience="desktop">
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="index.html"><div class="brand-mark">损</div><div><strong>追损工作台</strong><span>DESKTOP CONSOLE</span></div></a>
+      <div class="side-label">业务处理</div>
+      <nav aria-label="主导航">
+        <button class="nav-item is-active" data-view="submit"><i>01</i>采购填报</button><button class="nav-item" data-view="auto"><i>02</i>主单明细</button><button class="nav-item" data-view="review"><i>03</i>人工审核</button><button class="nav-item" data-view="ops"><i>04</i>营运确认</button><button class="nav-item" data-view="biz"><i>05</i>商分确认</button>
+      </nav>
+      <div class="side-label">洞察沉淀</div>
+      <nav aria-label="分析导航"><button class="nav-item" data-view="report"><i>06</i>追损月报</button><button class="nav-item" data-view="notebook"><i>07</i>错误错题本</button><button class="nav-item" data-view="flow"><i>08</i>阶段对比</button><button class="nav-item" data-view="iteration"><i>09</i>迭代看板</button></nav>
+      <a class="switch-device" href="mobile.html"><span>切换手机版</span><b>↗</b></a>
+    </aside>
+    <main>
+      <header class="topbar"><div><p class="eyebrow">LOSS RECOVERY / DESKTOP</p><h1 id="page-title">采购填报</h1><p class="page-subtitle">从一张主单开始，完成证据核查与责任闭环。</p></div><div class="top-actions"><span id="mode-badge" class="demo-badge">Demo</span><span id="version-badge" class="version-badge">MVP 0.7</span><span class="user-avatar">采</span></div></header>
+      <div id="environment-banner" class="environment-banner" role="status"></div>
+      <section class="view is-active" data-view-panel="submit"><div class="desktop-submit-layout"><article class="hero-card quick-submit"><span class="step-tag">NEW CASE</span><h2>输入单号，启动追损核查</h2><p>采购只需提供单号与明细追损原因，其余主单、活动、金额及图片证据由系统自动整理。</p><form id="submission-form" class="order-form"><label for="order-number">业务单号</label><input id="order-number" name="orderNumber" placeholder="LOSS-DEMO-006" autocomplete="off" required><label for="loss-reason">明细追损原因</label><textarea id="loss-reason" name="lossReason" placeholder="请描述需要追损的事实与疑点，例如价格录入、规格或渠道异常。" required></textarea><button type="submit">查询主单并发起追损 <span>→</span></button></form></article><aside class="process-preview"><p class="eyebrow">PROCESS PREVIEW</p><h3>提交后自动发生</h3><ol><li><b>01</b><span>查询主单与活动明细</span></li><li><b>02</b><span>整理市调与美菜双图</span></li><li><b>03</b><span>输出追损判断</span></li><li><b>04</b><span>通知审核角色确认</span></li></ol><div class="sla-card"><span>预计处理耗时</span><strong>&lt; 3 分钟</strong><small>Demo 演示口径</small></div></aside></div><div id="submit-result" class="result-slot"></div></section>
+      <section class="view" data-view-panel="auto"><div class="section-head"><div><p class="eyebrow">ORDER INTELLIGENCE</p><h2>主单明细与图片对比</h2></div><span class="role-chip">系统只读输出</span></div><div id="auto-content"></div></section>
+      <section class="view" data-view-panel="review"><div class="section-head"><div><p class="eyebrow">HUMAN REVIEW</p><h2>人工审核</h2></div><span class="role-chip">审核人</span></div><div id="review-content"></div></section>
+      <section class="view" data-view-panel="ops"><div class="section-head"><div><p class="eyebrow">OPERATIONS CONFIRM</p><h2>营运确认</h2></div><span class="role-chip">营运</span></div><div id="ops-content"></div></section>
+      <section class="view" data-view-panel="biz"><div class="section-head"><div><p class="eyebrow">BUSINESS FINANCE</p><h2>商分确认与结案</h2></div><span class="role-chip">商分</span></div><div id="biz-content"></div></section>
+      <section class="view" data-view-panel="report"><div class="section-head"><div><p class="eyebrow">MONTHLY REPORT</p><h2>追损月报</h2></div></div><div id="report-content"></div></section>
+      <section class="view" data-view-panel="notebook"><div class="section-head"><div><p class="eyebrow">ERROR NOTEBOOK</p><h2>市调错误错题本</h2></div></div><div id="notebook-content"></div></section>
+      <section class="view" data-view-panel="flow"><div class="section-head"><div><p class="eyebrow">CURRENT VS NEXT</p><h2>现状与新阶段对比</h2></div></div><div id="flow-content"></div></section>
+      <section class="view" data-view-panel="iteration"><div class="section-head"><div><p class="eyebrow">ITERATION LOOP</p><h2>迭代看板</h2></div></div><div id="iteration-content"></div></section>
+    </main>
+  </div><div id="toast" class="toast" role="status"></div><script src="app.js" defer></script>
+</body></html>
+
