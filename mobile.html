@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="description" content="追损协同手机版轻应用"><meta name="theme-color" content="#0b2d23"><title>追损协同｜手机版轻应用</title><link rel="stylesheet" href="styles.css"></head>
+<body class="workspace-page mobile-mode" data-experience="mobile">
+  <div class="mobile-app">
+    <header class="mobile-header"><a class="mobile-brand" href="index.html"><span class="brand-mark">损</span><span><b>追损轻应用</b><small>MOBILE · MVP 0.7</small></span></a><div class="mobile-header-actions"><span id="mode-badge" class="demo-badge">Demo</span><a href="desktop.html" aria-label="切换电脑版">⌘</a></div></header>
+    <main>
+      <div class="mobile-greeting"><div><p>下午好，采购同学</p><h1 id="page-title">快速发起追损</h1></div><span id="version-badge" class="version-badge">MVP 0.7</span></div>
+      <div id="environment-banner" class="environment-banner" role="status"></div>
+      <section class="view is-active" data-view-panel="submit"><article class="mobile-form-card"><div class="mobile-step"><span>1</span><div><b>填写追损信息</b><small>只需两项，系统自动补齐其余明细</small></div></div><form id="submission-form" class="order-form"><label for="order-number">单号</label><input id="order-number" name="orderNumber" placeholder="LOSS-DEMO-006" autocomplete="off" required><label for="loss-reason">明细追损原因</label><textarea id="loss-reason" name="lossReason" placeholder="例如：活动跟价价格录入错误，需要核对成交金额与图片证据。" required></textarea><button type="submit">查询并提交 <span>→</span></button></form></article><div class="mobile-flow-strip"><span>自动查询</span><i></i><span>人工审核</span><i></i><span>营运</span><i></i><span>商分</span></div><div id="submit-result" class="result-slot"></div></section>
+      <section class="view" data-view-panel="auto"><div class="section-head"><div><p class="eyebrow">ORDER DETAIL</p><h2>主单明细</h2></div></div><div id="auto-content"></div></section>
+      <section class="view" data-view-panel="review"><div class="section-head"><div><p class="eyebrow">TO-DO</p><h2>人工审核</h2></div></div><div id="review-content"></div></section>
+      <section class="view" data-view-panel="ops"><div class="section-head"><div><p class="eyebrow">TO-DO</p><h2>营运确认</h2></div></div><div id="ops-content"></div></section>
+      <section class="view" data-view-panel="biz"><div class="section-head"><div><p class="eyebrow">TO-DO</p><h2>商分确认</h2></div></div><div id="biz-content"></div></section>
+      <section class="view" data-view-panel="report"><div class="section-head"><div><p class="eyebrow">INSIGHT</p><h2>月报</h2></div></div><div id="report-content"></div></section>
+      <section class="view" data-view-panel="notebook"><div class="section-head"><div><p class="eyebrow">LEARNING</p><h2>错题本</h2></div></div><div id="notebook-content"></div></section>
+      <section class="view" data-view-panel="flow"><div class="section-head"><div><p class="eyebrow">CURRENT VS NEXT</p><h2>阶段对比</h2></div></div><div id="flow-content"></div></section>
+      <section class="view" data-view-panel="iteration"><div class="section-head"><div><p class="eyebrow">METRICS</p><h2>迭代指标</h2></div></div><div id="iteration-content"></div></section>
+    </main>
+    <nav class="mobile-nav" aria-label="移动端导航"><button class="nav-item is-active" data-view="submit"><i>＋</i><span>发起</span></button><button class="nav-item" data-view="auto"><i>▤</i><span>明细</span></button><button class="nav-item" data-view="review"><i>✓</i><span>待办</span></button><button class="nav-item" data-view="report"><i>⌁</i><span>月报</span></button><button class="nav-item" data-view="notebook"><i>◇</i><span>错题本</span></button><button class="nav-item" data-view="flow"><i>⇄</i><span>对比</span></button></nav>
+  </div><div id="toast" class="toast" role="status"></div><script src="app.js" defer></script>
+</body></html>
+
