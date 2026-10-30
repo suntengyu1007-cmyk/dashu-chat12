@@ -293,5 +293,5 @@ function renderMistakeLibrary(){const category=document.querySelector('#mistake-
 document.addEventListener('change',event=>{if(['mistake-category','mistake-origin'].includes(event.target.id))renderMistakeLibrary();});
 document.addEventListener('click',event=>{const b=event.target.closest('[data-study]');if(b){b.textContent='已学习 ✓';b.disabled=true;}});
 document.querySelector('#submission-form').addEventListener('submit', submitCase);
-loadAll().then(() => { const requested = new URL(location.href).searchParams.get('view'); if (titles[requested]) switchView(requested); }).catch((error) => showToast(`加载失败：${error.message}`, true));
+loadAll().then(() => { const requested = new URL(location.href).searchParams.get('view'); if (titles[requested]) switchView(requested); if(requested==='notebook')document.querySelector('[data-notebook="public"]')?.click(); }).catch((error) => showToast(`加载失败：${error.message}`, true));
 
