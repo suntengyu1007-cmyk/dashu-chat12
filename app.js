@@ -57,7 +57,7 @@ function demoFacts(orderNumber) {
 function switchView(view) {
   document.querySelectorAll('.nav-item').forEach((item) => item.classList.toggle('is-active', item.dataset.view === view));
   document.querySelectorAll('.view').forEach((panel) => panel.classList.toggle('is-active', panel.dataset.viewPanel === view));
-  const mobileTitles = { submit: '快速发起追损', auto: '主单明细', review: '待办确认', report: '追损月报', notebook: '错误错题本' };
+  const mobileTitles = { submit: '快速发起追损', auto: '主单明细', review: '人工审核', ops:'营运确认', biz:'商分确认', report: '追损月报', notebook: '错误错题本' };
   document.querySelector('#page-title').textContent = document.body.dataset.experience === 'mobile' ? (mobileTitles[view] || titles[view]) : titles[view];
   const url = new URL(location.href); url.searchParams.set('view', view); history.replaceState(null, '', url);
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -223,7 +223,7 @@ function bizTable() {
   const rows=ui.cases.filter(x=>x.state==='BIZ_CONFIRMATION');
   return `<div class="plain-panel comparison-scroll"><table class="detail-grid"><thead><tr><th>主单 / 活动</th><th>商品 / 时间</th><th>渠道 / 原因</th><th>跟价金额</th><th>审核意见</th><th>营运意见</th><th>责任 / 规则</th><th>操作</th></tr></thead><tbody>${rows.map(x=>`<tr><td>${escapeHtml(x.orderNumber)}<small>${escapeHtml(x.facts.activityId)}</small></td><td>鲜猪肉 500g<small>${escapeHtml(x.facts.createdAt)} 至 ${escapeHtml(x.facts.endedAt)}</small></td><td>${escapeHtml(x.facts.surveyChannel)}<small>${escapeHtml(x.lossReason)}</small></td><td>¥${Number(x.facts.followPriceAmount).toFixed(2)}<small>最终追损金额待核定</small></td><td>演示：证据已核对</td><td>演示：业务事实已确认</td><td>责任待最终确认<small>适用现行规则原文，未配置扣罚公式</small></td><td><button class="primary-button" data-action="biz-approve" data-id="${x.id}">确认</button><button class="secondary-button" data-action="feedback" data-id="${x.id}" data-role="biz">我要反馈</button></td></tr><tr><td colspan="8"><form class="feedback-form" data-feedback-id="${x.id}" hidden><textarea name="feedback" placeholder="填写商分反馈" required></textarea><button type="submit" data-id="${x.id}" data-role="biz">提交反馈</button></form></td></tr>`).join('') || '<tr><td colspan="8">暂无待确认明细</td></tr>'}</tbody></table></div>`;
 }
-function renderBiz(){document.querySelector('#biz-content').innerHTML=roleHeader('biz')+bizTable();}
+function renderBiz(){document.querySelector('#biz-content').innerHTML=roleHeader('biz')+bizTable().replaceAll('演示：证据已核对','审核员 A（演示）<small>证据已核对</small>').replaceAll('演示：业务事实已确认','营运专员 B（演示）<small>业务事实已确认</small>');}
 const mistakeSamples = [
  ['LOSS-DEMO-101','10-08','演示市调员 A','线下门店','鲜猪肉 500g','价格录入错误','图片 ¥19.90，录入 ¥17.90','市调采价真实性与价格录入核对','待判责 / 未执行处罚','先放大价签，再核对单位后录入'],
  ['LOSS-DEMO-102','10-15','演示市调员 A','竞对小程序','牛奶 250ml×12','规格不一致','误将 250ml×10 对比 250ml×12','同品同规比价核验','已确认需整改 / 扣罚待核定','品牌、规格、件数逐项勾选'],
