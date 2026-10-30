@@ -1,7 +1,7 @@
 const ui = { meta: null, cases: [], report: null, notebook: [], metrics: null };
 const titles = { submit: '采购填报', auto: '主单明细', review: '人工审核', ops: '营运确认', biz: '商分确认', report: '追损月报', notebook: '市调错误错题本', flow: '阶段对比', iteration: '迭代看板' };
 const browserDemo = {
-  meta: { ok: true, app: { version: 'MVP 0.7 Dense', mode: 'DEMO' }, states: {}, dictionaries: { errorReasons: { PRICE_ENTRY_ERROR: { label: '价格录入错误' } } } },
+  meta: { ok: true, app: { version: 'MVP 0.8 明细审核', mode: 'DEMO' }, states: {}, dictionaries: { errorReasons: { PRICE_ENTRY_ERROR: { label: '价格录入错误' } } } },
   cases: [
     { id: 'LR-DEMO-001', orderNumber: 'LOSS-DEMO-001', state: 'HUMAN_REVIEW', lossReason: '活动跟价价格录入错误，需核对活动期间成交金额与图片证据。', facts: demoFacts('LOSS-DEMO-001') },
     { id: 'LR-DEMO-002', orderNumber: 'LOSS-DEMO-002', state: 'OPS_CONFIRMATION', lossReason: '市调图片与美菜商品规格不一致。', facts: demoFacts('LOSS-DEMO-002') },
@@ -197,6 +197,61 @@ async function loadAll() {
   renderAll();
 }
 
+// Shared, evidence-first review screens. All records below are illustrative Demo data.
+function caseDetails(record, role = '主单明细', action = '') {
+  if (!record) return '<div class="empty">当前没有待处理明细</div>';
+  const f = record.facts || demoFacts(record.orderNumber);
+  return `<article class="plain-panel"><h3>${role} · ${escapeHtml(record.orderNumber)}</h3><p class="muted">演示案例，不代表真实判责或已执行处罚</p><div class="comparison-scroll"><table class="detail-grid"><tbody>
+  <tr><th>主单 ID</th><td>${escapeHtml(record.orderNumber)}</td><th>活动 ID</th><td>${escapeHtml(f.activityId)}</td></tr>
+  <tr><th>城市 / 品类</th><td>${escapeHtml(f.city)} / ${escapeHtml(f.category)}</td><th>商品 / SKU</th><td>鲜猪肉 500g / SKU-DEMO-0186</td></tr>
+  <tr><th>创建时间</th><td>${escapeHtml(f.createdAt)}</td><th>结束时间</th><td>${escapeHtml(f.endedAt)}</td></tr>
+  <tr><th>市调渠道 / 人员</th><td>${escapeHtml(f.surveyChannel)} / 演示市调员 A</td><th>活动跟价金额</th><td>¥${Number(f.followPriceAmount).toFixed(2)}</td></tr>
+  <tr><th>采购追损原因</th><td colspan="3">${escapeHtml(record.lossReason)}</td></tr>
+  <tr><th>系统核查意见</th><td colspan="3">待人工核实商品、规格、时间及价格证据；跟价金额不直接等于最终追损金额。</td></tr></tbody></table></div>
+  <div class="comparison-scroll"><table class="detail-grid evidence-review"><thead><tr><th>证据</th><th>市调</th><th>美菜</th></tr></thead><tbody><tr><th>图片</th><td>${evidenceVisual('survey')}</td><td>${evidenceVisual('meicai')}</td></tr><tr><th>图片标价</th><td>¥19.90 / 500g</td><td>¥21.80 / 500g</td></tr><tr><th>核查结果</th><td colspan="2">商品及规格一致；图示价格差 ¥1.90 / 500g。需对照原始录入记录确认录入错误，不能仅凭两个渠道存在价差判责。</td></tr></tbody></table></div>
+  <div class="review-checks"><b>${role}核查重点</b><p>${role === '营运确认' ? '确认实际业务损失、影响数量、活动时间和责任对象；存在争议时反馈具体字段与补充证据。' : '核对同一主单与 SKU、原始录入价格、图片标价、规格单位、时间及实际损失依据，形成可回查的判断。'}</p></div>
+  ${action ? `<div class="simple-actions"><button class="primary-button" data-action="${action}-approve" data-id="${record.id}">确认</button><button class="secondary-button" data-action="feedback" data-id="${record.id}" data-role="${action}">我要反馈</button></div><form class="feedback-form" data-feedback-id="${record.id}" hidden><label>反馈字段与原因<textarea name="feedback" placeholder="例如：SKU 不一致，请补充原始录入记录" required></textarea></label><button class="primary-button" type="submit" data-id="${record.id}" data-role="${action}">提交反馈</button><span>提交后保留原始证据及反馈记录，等待补充。</span></form>` : ''}${record.feedback ? `<p class="feedback-log">反馈记录：${escapeHtml(record.feedback)}</p>` : ''}</article>`;
+}
+function renderAuto() { document.querySelector('#auto-content').innerHTML = caseDetails(ui.cases[0]); }
+function renderReview() {
+  const sections = document.body.dataset.experience === 'mobile' ? [['HUMAN_REVIEW','人工审核','review'],['OPS_CONFIRMATION','营运确认','ops']] : [['HUMAN_REVIEW','人工审核','review']];
+  document.querySelector('#review-content').innerHTML = sections.map(([state,label,action]) => ui.cases.filter(x=>x.state===state).map(x=>caseDetails(x,label,action)).join('')).join('') || '<div class="empty">当前没有待处理明细</div>';
+  if(document.body.dataset.experience === 'mobile') document.querySelector('#review-content').innerHTML += `<h3>商分待确认</h3>${bizTable()}`;
+}
+function renderOps() { document.querySelector('#ops-content').innerHTML = ui.cases.filter(x=>x.state==='OPS_CONFIRMATION').map(x=>caseDetails(x,'营运确认','ops')).join('') || '<div class="empty">当前没有待确认明细</div>'; }
+function bizTable() {
+  const rows=ui.cases.filter(x=>x.state==='BIZ_CONFIRMATION');
+  return `<div class="plain-panel comparison-scroll"><table class="detail-grid"><thead><tr><th>主单 / 活动</th><th>商品 / 时间</th><th>渠道 / 原因</th><th>跟价金额</th><th>审核意见</th><th>营运意见</th><th>责任 / 规则</th><th>操作</th></tr></thead><tbody>${rows.map(x=>`<tr><td>${escapeHtml(x.orderNumber)}<small>${escapeHtml(x.facts.activityId)}</small></td><td>鲜猪肉 500g<small>${escapeHtml(x.facts.createdAt)} 至 ${escapeHtml(x.facts.endedAt)}</small></td><td>${escapeHtml(x.facts.surveyChannel)}<small>${escapeHtml(x.lossReason)}</small></td><td>¥${Number(x.facts.followPriceAmount).toFixed(2)}<small>最终追损金额待核定</small></td><td>演示：证据已核对</td><td>演示：业务事实已确认</td><td>责任待最终确认<small>适用现行规则原文，未配置扣罚公式</small></td><td><button class="primary-button" data-action="biz-approve" data-id="${x.id}">确认</button><button class="secondary-button" data-action="feedback" data-id="${x.id}" data-role="biz">我要反馈</button></td></tr><tr><td colspan="8"><form class="feedback-form" data-feedback-id="${x.id}" hidden><textarea name="feedback" placeholder="填写商分反馈" required></textarea><button type="submit" data-id="${x.id}" data-role="biz">提交反馈</button></form></td></tr>`).join('') || '<tr><td colspan="8">暂无待确认明细</td></tr>'}</tbody></table></div>`;
+}
+function renderBiz(){document.querySelector('#biz-content').innerHTML=bizTable();}
+const mistakeSamples = [
+ ['LOSS-DEMO-101','10-08','演示市调员 A','线下门店','鲜猪肉 500g','价格录入错误','图片 ¥19.90，录入 ¥17.90','市调采价真实性与价格录入核对','待判责 / 未执行处罚','先放大价签，再核对单位后录入'],
+ ['LOSS-DEMO-102','10-15','演示市调员 A','竞对小程序','牛奶 250ml×12','规格不一致','误将 250ml×10 对比 250ml×12','同品同规比价核验','已确认需整改 / 扣罚待核定','品牌、规格、件数逐项勾选'],
+ ['LOSS-DEMO-103','10-23','演示市调员 A','线下门店','调味品 1L','图片时效错误','使用已结束活动图片','市调图片时效核验','待补证 / 未执行处罚','核对拍摄时间与活动有效期']
+];
+function renderNotebook(){
+ document.querySelector('#notebook-content').innerHTML=`<div class="notebook-tabs"><button class="primary-button" data-notebook="personal">我的错题 · 本月</button><button class="secondary-button" data-notebook="public">公共错题本</button></div><section id="personal-notes" class="plain-panel"><h3>2026 年 10 月 · 演示市调员 A 的错单明细</h3><p>3 条演示案例；逐单展示错误、规则、处理状态和加强点。当前未接真实处罚系统，“已处罚”只允许在回读执行凭证后展示。</p><div class="comparison-scroll"><table class="detail-grid"><thead><tr>${['主单 ID','日期','人员','渠道','商品','错误类型','错误事实','适用核查规则','处理 / 处罚状态','加强点'].map(x=>`<th>${x}</th>`).join('')}</tr></thead><tbody>${mistakeSamples.map(row=>`<tr>${row.map(v=>`<td>${escapeHtml(v)}</td>`).join('')}</tr>`).join('')}</tbody></table></div><h4>本月处罚规则回查</h4><p>展示字段：规则名称、版本、生效时间、命中条款、责任比例、核定金额、执行日期、执行凭证。本 Demo 仅列核查规则名称，处罚条款、比例和金额待权威规则及人工判定接入后填充。</p></section><section id="public-notes" class="plain-panel" hidden><h3>公共错题本 · 高频错误榜（演示样本）</h3><p>按匿名同类错误汇总，学习纠错，不公开个人处罚信息。样本 12 条，排序为演示数据。</p><div class="comparison-scroll"><table class="detail-grid"><thead><tr><th>排序 / 错误</th><th>数量 / 占比</th><th>典型情况</th><th>关联样例</th><th>正确做法</th><th>检查点</th></tr></thead><tbody><tr><td>1 · 价格录入错误</td><td>6 / 50%</td><td>价签 19.90，录成 17.90</td><td>LOSS-DEMO-101</td><td>以同一商品原始有效价签核对录入</td><td>价格数字、单位、促销条件</td></tr><tr><td>2 · 规格不一致</td><td>4 / 33.3%</td><td>10 盒与 12 盒直接比价</td><td>LOSS-DEMO-102</td><td>核对品牌、净含量、包装件数</td><td>同品同规，不凭外观认定</td></tr><tr><td>3 · 图片时效错误</td><td>2 / 16.7%</td><td>引用已结束促销价</td><td>LOSS-DEMO-103</td><td>核对拍摄时间与价格有效期</td><td>时间、门店、活动限制</td></tr></tbody></table></div><h4>学习反馈</h4><p>高频问题进入下月培训；复测需回查新产生的同类任务，比较重复错误率后更新公共案例。</p></section>`;
+}
+function renderFlow(){
+ const rows=[
+ ['采购发起','在月度明细表填写主单 ID、渠道、原因，补充价格、数量、损失证据','填写主单 ID＋明细原因，系统查询后核对提交','必填校验、同主单防重，缺失明细退回补充','减少补数；检查字段完整率与重复提交率'],
+ ['明细查询','人工跨系统查主单、SKU、活动和价格','同页关联活动 ID、创建 / 结束时间、金额、渠道、商品与人员','保留来源、查询时间和原始快照；匹配失败不能输出确定结论','核对同案一致性与查询成功率'],
+ ['图片证据','人工收集市调与美菜截图并解释差异','双图同表展示，关联规格、价签、单位、有效期与原始录入','系统差异只作为线索，审核人核实证据后判断','衡量证据齐全率与补证次数'],
+ ['人工审核','当前判责负责人核对材料并沟通补充','查看完整主单与双图，确认进入营运或我要反馈','反馈必须具体到字段和原因；记录审核人、时间、前后值','统计补证原因、退回率与处理时长'],
+ ['营运确认','逐人沟通业务事实与承担方','同一明细核对实际损失、数量、时间、责任对象，确认或反馈','未确认不得自动进入商分；争议回到对应审核节点','统计营运争议类型与二次退回率'],
+ ['商分确认','人工汇总并在核对表回查最终结果','简洁明细表核对前序意见、金额、责任与规则后确认','确认结论与实际扣罚执行分开记录，接入执行凭证才能标已处罚','金额闭合、规则版本与执行状态可追溯'],
+ ['月报','月底人工整理渠道、原因及结果','仅纳入最终确认案件，输出明细、错误渠道、原因、建议','区分跟价金额、核定追损金额、实际执行金额','用结案明细对齐汇总，统计建议落实情况'],
+ ['个人错题本','错误经验分散，无法按人回看','按月列本人错单、事实、规则、处罚状态和加强点','非本人错误不自动记错；改判后同步更正','跟踪同类再犯率及复测通过率'],
+ ['公共错题本','依赖口头培训和零散案例','匿名汇总高频错误、典型样例、正确做法和核查点','同类型去重，样例保留证据；不公开个人处罚','看高频错误占比与培训后的变化']
+ ];
+ document.querySelector('#flow-content').innerHTML=`<article class="plain-panel"><h3>现行流程 → 新阶段：逐节点升级</h3><p>现状以当前月度追损表及已附追责流程为基线；新阶段为产品设计，通知、数据查询和处罚执行仍需接入业务系统。</p><div class="comparison-scroll"><table class="detail-grid"><thead><tr><th>节点</th><th>现状怎么做</th><th>新阶段怎么做</th><th>控制与异常处理</th><th>升级价值 / 验收</th></tr></thead><tbody>${rows.map(r=>`<tr>${r.map((v,i)=>`<${i?'td':'th'}>${escapeHtml(v)}</${i?'td':'th'}>`).join('')}</tr>`).join('')}</tbody></table></div><h4>流转规则</h4><p>采购提交 → 自动查数与证据整理 → 人工审核 → 营运确认 → 商分确认 → 月报与错题本。任一节点“我要反馈”均保留明细并记录问题，补充后回到原节点重新确认。</p><h4>分阶段上线与验收</h4><p>阶段一：双端 Demo 验证字段、证据与交互；阶段二：接入只读主单及图片来源，验证一致性、查不到与多 SKU 场景；阶段三：接入身份、通知和审核留痕，验证反馈与重新确认；阶段四：接入有效规则、执行凭证、月报和错题本，确保汇总可回查、改判可同步。</p></article>`;
+}
+document.addEventListener('click',event=>{
+ const feedback=event.target.closest('[data-action="feedback"]');
+ if(feedback){const form=document.querySelector(`[data-feedback-id="${feedback.dataset.id}"]`); if(form){form.hidden=!form.hidden; if(!form.hidden)form.querySelector('textarea').focus();}}
+ const tab=event.target.closest('[data-notebook]'); if(tab){document.querySelector('#personal-notes').hidden=tab.dataset.notebook!=='personal';document.querySelector('#public-notes').hidden=tab.dataset.notebook!=='public';}
+});
+document.addEventListener('submit',event=>{if(!event.target.matches('.feedback-form'))return;event.preventDefault();const button=event.target.querySelector('button');const record=browserDemo.cases.find(x=>x.id===button.dataset.id);if(record){record.feedback=new FormData(event.target).get('feedback');record.state={review:'HUMAN_RETURNED',ops:'OPS_RETURNED',biz:'BIZ_RETURNED'}[button.dataset.role];event.target.innerHTML=`<p class="feedback-log">已提交反馈：${escapeHtml(record.feedback)}。当前状态：待补充，未进入下一节点。</p>`;showToast('反馈已记录，等待补充');}});
 document.querySelectorAll('.nav-item').forEach((button) => button.addEventListener('click', () => switchView(button.dataset.view)));
 document.querySelector('#submission-form').addEventListener('submit', submitCase);
 loadAll().then(() => { const requested = new URL(location.href).searchParams.get('view'); if (titles[requested]) switchView(requested); }).catch((error) => showToast(`加载失败：${error.message}`, true));
